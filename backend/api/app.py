@@ -12,28 +12,75 @@ from flask import Flask, render_template, request, jsonify
 from flask_cors import CORS
 import json
 import pickle
+import logging
+import sys
 from pathlib import Path
+from datetime import datetime
+from functools import wraps
+
+# Setup logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler(sys.stdout)
+    ]
+)
+logger = logging.getLogger('2ndBrain')
+
+# Import ML libraries
 from openai import OpenAI
 from sklearn.metrics.pairwise import cosine_similarity
 import numpy as np
 
+# Project setup
 PROJECT_ROOT = Path(__file__).parent.parent.parent
 app = Flask(__name__,
             template_folder=str(PROJECT_ROOT / "frontend" / "templates"),
             static_folder=str(PROJECT_ROOT / "frontend" / "static"))
-CORS(app)  # Enable CORS for frontend on different port
+
+# CORS configuration - restrict in production
+ALLOWED_ORIGINS = [
+    "http://localhost:5000",
+    "http://127.0.0.1:5000",
+    "https://2ndbrain.onrender.com",
+    "https://*.onrender.com"
+]
+CORS(app, origins=ALLOWED_ORIGINS)
 
 # Configuration
 BASE_DIR = PROJECT_ROOT
 DATA_DIR = PROJECT_ROOT / "club_data"
 TARGET_USER = "rishi2205"
+APP_VERSION = "1.0.0"
+APP_START_TIME = datetime.now()
 
-# Load OpenAI API key
+# Load environment variables
 import os
 from dotenv import load_dotenv
 load_dotenv()
+
+# Validate required environment variables
+def validate_environment():
+    """Validate required environment variables on startup"""
+    required_vars = []
+    warnings = []
+
+    if not os.getenv("OPENAI_API_KEY"):
+        warnings.append("OPENAI_API_KEY not set - AI features will be disabled")
+
+    for var in required_vars:
+        if not os.getenv(var):
+            logger.error(f"Missing required environment variable: {var}")
+            sys.exit(1)
+
+    for warning in warnings:
+        logger.warning(warning)
+
+validate_environment()
+
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
-client = OpenAI(api_key=OPENAI_API_KEY)
+client = OpenAI(api_key=OPENAI_API_KEY) if OPENAI_API_KEY else None
 
 # Global variables
 search_index = None
@@ -180,18 +227,98 @@ def load_data():
 
 
 # ============================================================================
+# ============================================================================
+# Error Handlers
+# ============================================================================
+
+@app.errorhandler(404)
+def not_found_error(error):
+    """Handle 404 errors"""
+    if request.path.startswith('/api/'):
+        return jsonify({'error': 'Endpoint not found', 'status': 404}), 404
+    return render_template('error.html', error_code=404, error_message="Page not found"), 404
+
+@app.errorhandler(500)
+def internal_error(error):
+    """Handle 500 errors"""
+    logger.error(f"Internal server error: {error}")
+    if request.path.startswith('/api/'):
+        return jsonify({'error': 'Internal server error', 'status': 500}), 500
+    return render_template('error.html', error_code=500, error_message="Something went wrong"), 500
+
+@app.errorhandler(Exception)
+def handle_exception(error):
+    """Handle uncaught exceptions"""
+    logger.error(f"Unhandled exception: {error}", exc_info=True)
+    if request.path.startswith('/api/'):
+        return jsonify({'error': str(error), 'status': 500}), 500
+    return render_template('error.html', error_code=500, error_message="An unexpected error occurred"), 500
+
+# ============================================================================
+# Health & Status Endpoints
+# ============================================================================
+
+@app.route('/health')
+def health_check():
+    """Health check endpoint for deployment monitoring"""
+    uptime = (datetime.now() - APP_START_TIME).total_seconds()
+
+    health_status = {
+        'status': 'healthy',
+        'version': APP_VERSION,
+        'uptime_seconds': round(uptime, 2),
+        'timestamp': datetime.now().isoformat(),
+        'checks': {
+            'openai_configured': bool(OPENAI_API_KEY),
+            'data_loaded': embedding_index is not None,
+            'search_ready': search_index is not None
+        }
+    }
+
+    # Determine overall health
+    if not health_status['checks']['openai_configured']:
+        health_status['status'] = 'degraded'
+
+    return jsonify(health_status)
+
+@app.route('/api/version')
+def api_version():
+    """API version information"""
+    return jsonify({
+        'name': '2ndBrain',
+        'version': APP_VERSION,
+        'api_version': 'v1',
+        'documentation': '/api/docs'
+    })
+
+# ============================================================================
 # Main Routes
 # ============================================================================
 
 @app.route('/')
-def index():
-    """Home page with workflow"""
+def landing():
+    """Landing page"""
+    return render_template('landing.html')
+
+@app.route('/app')
+def app_main():
+    """Main application page with workflow"""
     stats = {
         'target_user': TARGET_USER,
         'total_documents': len(embedding_index.get('chunks', [])) if embedding_index else 0,
         'total_gaps': len(knowledge_gaps) if knowledge_gaps else 0,
     }
     return render_template('index_workflow.html', stats=stats)
+
+@app.route('/chat')
+def chat_interface():
+    """Clean chat interface for knowledge search"""
+    stats = {
+        'target_user': TARGET_USER,
+        'total_documents': len(embedding_index.get('chunks', [])) if embedding_index else 0,
+        'total_gaps': len(knowledge_gaps) if knowledge_gaps else 0,
+    }
+    return render_template('app.html', stats=stats)
 
 
 # ============================================================================

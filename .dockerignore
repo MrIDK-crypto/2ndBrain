@@ -1,0 +1,54 @@
+# Git
+.git
+.gitignore
+
+# Python
+__pycache__
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+venv_*/
+ENV/
+env/
+.venv
+
+# Data (mount as volumes instead)
+data/
+club_data/
+output/
+*.pkl
+*.pickle
+*.jsonl
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Environment
+.env
+.env.local
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Documentation
+docs/
+*.md
+!README.md
+
+# Tests
+tests/
+*_test.py
+test_*.py
+
+# Misc
+*.cache
+.cache/
+scripts/
+training_generator/
