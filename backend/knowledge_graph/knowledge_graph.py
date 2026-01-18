@@ -375,7 +375,7 @@ class KnowledgeGraphBuilder:
         output_file.parent.mkdir(parents=True, exist_ok=True)
 
         with open(output_file, 'w', encoding='utf-8') as f:
-            f.write("// KnowledgeVault Neo4j Cypher Queries\n")
+            f.write("// 2ndBrain Neo4j Cypher Queries\n")
             f.write("// Generated queries for manual execution\n\n")
 
             for i, item in enumerate(self.queries_log, 1):

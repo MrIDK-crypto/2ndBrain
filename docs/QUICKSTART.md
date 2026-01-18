@@ -1,6 +1,6 @@
-# KnowledgeVault Quick Start Guide
+# 2ndBrain Quick Start Guide
 
-Get up and running with KnowledgeVault in 5 minutes!
+Get up and running with 2ndBrain in 5 minutes!
 
 ## Prerequisites
 
@@ -11,7 +11,7 @@ Get up and running with KnowledgeVault in 5 minutes!
 ## Step 1: Setup Environment
 
 ```bash
-cd /Users/rishitjain/Downloads/knowledgevault_backend
+cd /Users/rishitjain/Downloads/2ndbrain_backend
 
 # Install dependencies
 pip install -r requirements.txt
@@ -189,7 +189,7 @@ Avg questions per project: 3.3
 VECTOR DATABASE STATISTICS
 ==========================
 Total documents indexed: 500
-Collection: knowledgevault
+Collection: 2ndbrain
 Embedding model: all-mpnet-base-v2
 
 ✓ Pipeline complete in 8.5 minutes

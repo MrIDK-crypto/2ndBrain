@@ -1,3 +1,3 @@
 """
-Data processing module for KnowledgeVault
+Data processing module for 2ndBrain
 """

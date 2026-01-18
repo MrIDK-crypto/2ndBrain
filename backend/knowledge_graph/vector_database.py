@@ -20,7 +20,7 @@ class VectorDatabaseBuilder:
     def __init__(
         self,
         persist_directory: str,
-        collection_name: str = "knowledgevault",
+        collection_name: str = "2ndbrain",
         embedding_model: str = "sentence-transformers/all-mpnet-base-v2",
         use_openai_embeddings: bool = False,
         openai_api_key: Optional[str] = None
@@ -66,7 +66,7 @@ class VectorDatabaseBuilder:
         except:
             self.collection = self.client.create_collection(
                 name=collection_name,
-                metadata={"description": "KnowledgeVault document embeddings"}
+                metadata={"description": "2ndBrain document embeddings"}
             )
             print(f"✓ Created new collection: {collection_name}")
 

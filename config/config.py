@@ -1,5 +1,5 @@
 """
-KnowledgeVault Configuration Module
+2ndBrain Configuration Module
 Centralized configuration for all backend components
 """
 
@@ -11,7 +11,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 class Config:
-    """Main configuration class for KnowledgeVault"""
+    """Main configuration class for 2ndBrain"""
 
     # Base Paths
     BASE_DIR = Path(__file__).parent.parent
@@ -49,7 +49,7 @@ class Config:
 
     # Vector Database
     CHROMA_PERSIST_DIR = str(DATA_DIR / "chroma_db")
-    COLLECTION_NAME = "knowledgevault"
+    COLLECTION_NAME = "2ndbrain"
 
     # Knowledge Graph
     NEO4J_URI = os.getenv("NEO4J_URI", "bolt://localhost:7687")

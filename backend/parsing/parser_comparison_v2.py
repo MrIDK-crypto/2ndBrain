@@ -454,7 +454,7 @@ def generate_html_report(results):
 """
 
     # Save
-    output_path = "/Users/rishitjain/Downloads/knowledgevault_backend/parser_comparison_v2.html"
+    output_path = str(Path(__file__).parent.parent.parent / "output" / "parser_comparison_v2.html")
     with open(output_path, 'w', encoding='utf-8') as f:
         f.write(html)
 

@@ -70,7 +70,7 @@ def test_llamaparse(file_path: str):
 def test_current_parser(file_path: str):
     """Test current parser"""
     import sys
-    sys.path.insert(0, '/Users/rishitjain/Downloads/knowledgevault_backend')
+    sys.path.insert(0, '.')
 
     from parsers.document_parser import DocumentParser
 
@@ -242,7 +242,7 @@ def main():
         print()
 
     # Save results
-    output_file = '/Users/rishitjain/Downloads/knowledgevault_backend/llamaparse_results.json'
+    output_file = './llamaparse_results.json'
     with open(output_file, 'w') as f:
         json.dump(results, f, indent=2)
 

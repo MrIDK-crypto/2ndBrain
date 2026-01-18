@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: knowledgevault
+    name: 2ndbrain
     runtime: python
     plan: starter  # $7/month - 512MB RAM + can scale
     buildCommand: pip install -r requirements.txt

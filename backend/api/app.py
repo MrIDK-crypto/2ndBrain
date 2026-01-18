@@ -1,5 +1,5 @@
 """
-KnowledgeVault Universal Web Application
+2ndBrain Universal Web Application
 Complete workflow with all steps:
 - Step 0: Connect APIs (Gmail, Slack, GitHub)
 - Step 1: Filter Messages

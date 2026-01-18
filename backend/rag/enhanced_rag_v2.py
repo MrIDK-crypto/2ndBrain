@@ -1351,7 +1351,7 @@ def create_enhanced_rag_v2(
     """Create EnhancedRAGv2 instance"""
 
     if index_path is None:
-        index_path = "/Users/rishitjain/Downloads/knowledgevault_backend/club_data/embedding_index.pkl"
+        index_path = str(Path(__file__).parent.parent.parent / "club_data" / "embedding_index.pkl")
 
     if api_key is None:
         api_key = os.environ.get("OPENAI_API_KEY")

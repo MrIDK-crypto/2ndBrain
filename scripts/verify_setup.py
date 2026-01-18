@@ -1,10 +1,10 @@
-"""Verify all external service configurations for KnowledgeVault"""
+"""Verify all external service configurations for 2ndBrain"""
 import os
 import sys
 from dotenv import load_dotenv
 
 # Load environment
-load_dotenv("/Users/rishitjain/Downloads/knowledgevault_backend/.env")
+load_dotenv(".env")
 
 def check_env_var(name: str, placeholder_check: str = None) -> tuple:
     """Check if environment variable is set and not a placeholder"""
@@ -31,7 +31,7 @@ def verify_pinecone():
             from pinecone import Pinecone
             pc = Pinecone(api_key=os.getenv("PINECONE_API_KEY"))
             indexes = [idx.name for idx in pc.list_indexes()]
-            index_name = os.getenv("PINECONE_INDEX", "knowledgevault")
+            index_name = os.getenv("PINECONE_INDEX", "2ndbrain")
             if index_name in indexes:
                 index = pc.Index(index_name)
                 stats = index.describe_index_stats()

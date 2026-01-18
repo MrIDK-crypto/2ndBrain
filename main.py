@@ -1,5 +1,5 @@
 """
-KnowledgeVault Master Orchestration Script
+2ndBrain Master Orchestration Script
 Coordinates the entire knowledge management pipeline
 """
 
@@ -25,8 +25,8 @@ from backend.content_generation.powerpoint_generator import PowerPointGenerator
 from backend.content_generation.video_generator import VideoGenerator
 
 
-class KnowledgeVaultOrchestrator:
-    """Master orchestrator for the KnowledgeVault pipeline"""
+class 2ndBrainOrchestrator:
+    """Master orchestrator for the 2ndBrain pipeline"""
 
     def __init__(self, config):
         """
@@ -39,7 +39,7 @@ class KnowledgeVaultOrchestrator:
         self.start_time = datetime.now()
 
         print("\n" + "="*80)
-        print("KNOWLEDGEVAULT BACKEND ORCHESTRATOR")
+        print("2NDBRAIN BACKEND ORCHESTRATOR")
         print("="*80)
         print(f"Started at: {self.start_time}")
         print(f"Working directory: {config.BASE_DIR}")
@@ -251,7 +251,7 @@ class KnowledgeVaultOrchestrator:
         skip_videos: bool = False
     ):
         """
-        Run the complete KnowledgeVault pipeline
+        Run the complete 2ndBrain pipeline
 
         Args:
             data_limit: Limit number of documents to process (for testing)
@@ -345,7 +345,7 @@ class KnowledgeVaultOrchestrator:
 
 def main():
     """Main entry point"""
-    parser = argparse.ArgumentParser(description="KnowledgeVault Backend Pipeline")
+    parser = argparse.ArgumentParser(description="2ndBrain Backend Pipeline")
 
     parser.add_argument(
         '--limit',
@@ -386,7 +386,7 @@ def main():
         sys.exit(1)
 
     # Run pipeline
-    orchestrator = KnowledgeVaultOrchestrator(Config)
+    orchestrator = 2ndBrainOrchestrator(Config)
 
     results = orchestrator.run_full_pipeline(
         data_limit=args.limit,

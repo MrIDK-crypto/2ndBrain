@@ -1,10 +1,10 @@
-# KnowledgeVault
+# 2ndBrain
 
 A comprehensive enterprise knowledge management system that captures, organizes, and makes searchable tacit and explicit knowledge from employee documents using a hierarchical RAG (Retrieval-Augmented Generation) framework.
 
 ## Overview
 
-KnowledgeVault processes unstructured employee data (emails, documents) through multiple stages:
+2ndBrain processes unstructured employee data (emails, documents) through multiple stages:
 
 1. **Data Unclustering** - Flattens organized data into a single corpus
 2. **Employee Clustering** - Groups documents by employee
@@ -303,4 +303,4 @@ This project is for educational and research purposes.
 
 ---
 
-Built with KnowledgeVault - Enterprise Knowledge Continuity Platform
+Built with 2ndBrain - Enterprise Knowledge Continuity Platform

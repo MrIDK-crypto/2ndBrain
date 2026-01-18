@@ -30,7 +30,7 @@ from openai import OpenAI
 BATCH_SIZE = 50  # Documents per batch (safe for M3)
 EMBEDDING_MODEL = "text-embedding-3-small"
 EMBEDDING_DIMENSIONS = 1536
-DATA_DIR = Path("/Users/rishitjain/Downloads/knowledgevault_backend/club_data")
+DATA_DIR = Path(__file__).parent.parent / "club_data"
 PROGRESS_FILE = DATA_DIR / "indexing_progress.json"
 TEMP_INDEX_FILE = DATA_DIR / "embedding_index_temp.pkl"
 FINAL_INDEX_FILE = DATA_DIR / "embedding_index.pkl"

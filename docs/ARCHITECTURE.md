@@ -1,8 +1,8 @@
-# KnowledgeVault Architecture
+# 2ndBrain Architecture
 
 ## System Overview
 
-KnowledgeVault is a hierarchical knowledge management system that processes unstructured employee data through multiple AI-powered stages to create a queryable knowledge base.
+2ndBrain is a hierarchical knowledge management system that processes unstructured employee data through multiple AI-powered stages to create a queryable knowledge base.
 
 ## High-Level Architecture
 
@@ -76,7 +76,7 @@ KnowledgeVault is a hierarchical knowledge management system that processes unst
 │ Output:              │  │ • Project            │  │ - Cluster tags     │
 │ gap_analysis/        │  │ • Document           │  │                    │
 │ {emp}_gaps.json      │  │ • Cluster            │  │ Collection:        │
-│                      │  │                      │  │ "knowledgevault"   │
+│                      │  │                      │  │ "2ndbrain"   │
 │       ▼              │  │ Edges:               │  │                    │
 │ STAGE 6: QUESTIONS   │  │ • WORKED_ON          │  │ Persist:           │
 ├──────────────────────┤  │ • AUTHORED           │  │ chroma_db/         │
