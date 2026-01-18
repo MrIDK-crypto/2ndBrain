@@ -1,0 +1,44 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+venv_*/
+ENV/
+env/
+.venv
+
+# Data folders (too large for git)
+data/
+club_data/
+output/
+*.jsonl
+*.pkl
+*.pickle
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Environment
+.env
+.env.local
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Caches
+.cache/
+*.cache
+
+# API Keys and secrets
+*credentials*.json
+*secret*.json
+*.pem
+*.key
