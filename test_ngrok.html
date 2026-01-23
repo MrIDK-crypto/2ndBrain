@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>UCLA 2nd Brain - Ngrok Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-box {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2c5282;
+        }
+        .status {
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        .success {
+            background: #c6f6d5;
+            color: #2f855a;
+        }
+        button {
+            background: #4299e1;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background: #3182ce;
+        }
+        #result {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f7fafc;
+            border-radius: 5px;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-box">
+        <h1>🎓 UCLA 2nd Brain</h1>
+
+        <div class="status success">
+            ✅ Ngrok Connection Working!
+        </div>
+
+        <p>If you can see this page, ngrok is successfully tunneling to your application.</p>
+
+        <button onclick="testAPI()">Test API Connection</button>
+
+        <div id="result"></div>
+
+        <hr style="margin: 30px 0;">
+
+        <h2>Next Steps:</h2>
+        <ol>
+            <li>Click "Test API Connection" above to verify the backend</li>
+            <li>Use the login credentials:
+                <ul>
+                    <li><strong>Email:</strong> demo@ucla.beat</li>
+                    <li><strong>Password:</strong> DemoUCLA2024</li>
+                </ul>
+            </li>
+            <li>Access the API at: <code>/api/auth/login</code></li>
+        </ol>
+    </div>
+
+    <script>
+        async function testAPI() {
+            const result = document.getElementById('result');
+            result.innerHTML = 'Testing...';
+
+            try {
+                const response = await fetch('/health');
+                const data = await response.json();
+
+                result.innerHTML = `
+                    <strong>✅ API is working!</strong><br><br>
+                    <pre>${JSON.stringify(data, null, 2)}</pre>
+                `;
+            } catch (error) {
+                result.innerHTML = `
+                    <strong>❌ API Error:</strong><br>
+                    ${error.message}
+                `;
+            }
+        }
+    </script>
+</body>
+</html>

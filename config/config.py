@@ -19,12 +19,12 @@ class Config:
     OUTPUT_DIR = BASE_DIR / "output"
     MODELS_DIR = BASE_DIR / "models"
 
-    # Enron Dataset
-    ENRON_MAILDIR = os.getenv("ENRON_MAILDIR", "/Users/rishitjain/Downloads/maildir")
+    # Enron Dataset - no default path, must be set via environment
+    ENRON_MAILDIR = os.getenv("ENRON_MAILDIR", "")
 
-    # API Keys
+    # API Keys - NEVER hardcode keys, always use environment variables
     OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
-    LLAMAPARSE_API_KEY = os.getenv("LLAMAPARSE_API_KEY", "llx-UqKQjwEM0stshriDR5HRuYCURE5gkyeymC0E0tL7NFZX5IHG")
+    LLAMAPARSE_API_KEY = os.getenv("LLAMAPARSE_API_KEY", "")
 
     # Model Configuration
     EMBEDDING_MODEL = "sentence-transformers/all-mpnet-base-v2"
@@ -55,6 +55,19 @@ class Config:
     NEO4J_URI = os.getenv("NEO4J_URI", "bolt://localhost:7687")
     NEO4J_USER = os.getenv("NEO4J_USER", "neo4j")
     NEO4J_PASSWORD = os.getenv("NEO4J_PASSWORD", "")
+
+    # Database (PostgreSQL)
+    DATABASE_URL = os.getenv(
+        "DATABASE_URL",
+        "postgresql://localhost:5432/secondbrain"
+    )
+    SQL_ECHO = os.getenv("SQL_ECHO", "false").lower() == "true"
+
+    # Authentication
+    JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", "")
+    JWT_ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
+    ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "30"))
+    REFRESH_TOKEN_EXPIRE_DAYS = int(os.getenv("REFRESH_TOKEN_EXPIRE_DAYS", "7"))
 
     # RAG Configuration
     TOP_K_RETRIEVAL = 10
@@ -92,15 +105,34 @@ class Config:
         print(f"✓ Created directory structure at {cls.BASE_DIR}")
 
     @classmethod
-    def validate_config(cls):
-        """Validate that all required configurations are set"""
+    def validate_config(cls, require_enron: bool = False):
+        """
+        Validate that all required configurations are set.
+
+        Args:
+            require_enron: If True, validates ENRON_MAILDIR exists
+        """
         errors = []
+        warnings = []
 
+        # Required: OpenAI API key
         if not cls.OPENAI_API_KEY:
-            errors.append("OPENAI_API_KEY not set")
+            errors.append("OPENAI_API_KEY not set - required for RAG and classification")
 
-        if not Path(cls.ENRON_MAILDIR).exists():
-            errors.append(f"ENRON_MAILDIR not found: {cls.ENRON_MAILDIR}")
+        # Optional but recommended: LlamaParse for document parsing
+        if not cls.LLAMAPARSE_API_KEY:
+            warnings.append("LLAMAPARSE_API_KEY not set - advanced document parsing disabled")
+
+        # Conditional: Enron dataset path
+        if require_enron:
+            if not cls.ENRON_MAILDIR:
+                errors.append("ENRON_MAILDIR not set")
+            elif not Path(cls.ENRON_MAILDIR).exists():
+                errors.append(f"ENRON_MAILDIR not found: {cls.ENRON_MAILDIR}")
+
+        # Print warnings
+        for warning in warnings:
+            print(f"⚠ Warning: {warning}")
 
         if errors:
             raise ValueError(f"Configuration errors: {', '.join(errors)}")

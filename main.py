@@ -25,7 +25,7 @@ from backend.content_generation.powerpoint_generator import PowerPointGenerator
 from backend.content_generation.video_generator import VideoGenerator
 
 
-class 2ndBrainOrchestrator:
+class SecondBrainOrchestrator:
     """Master orchestrator for the 2ndBrain pipeline"""
 
     def __init__(self, config):
@@ -386,7 +386,7 @@ def main():
         sys.exit(1)
 
     # Run pipeline
-    orchestrator = 2ndBrainOrchestrator(Config)
+    orchestrator = SecondBrainOrchestrator(Config)
 
     results = orchestrator.run_full_pipeline(
         data_limit=args.limit,

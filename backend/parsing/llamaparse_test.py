@@ -9,8 +9,11 @@ import json
 from pathlib import Path
 from datetime import datetime
 
-# Set API key
-os.environ['LLAMA_CLOUD_API_KEY'] = 'llx-jTRKY79jkFMNtNmx0jPGeTQ1JY2crmoFsnhvj4gosjjuK7Vp'
+# Set API key from environment - NEVER hardcode API keys
+LLAMA_API_KEY = os.getenv('LLAMA_CLOUD_API_KEY', os.getenv('LLAMAPARSE_API_KEY', ''))
+if not LLAMA_API_KEY:
+    raise ValueError("LLAMA_CLOUD_API_KEY or LLAMAPARSE_API_KEY environment variable must be set")
+os.environ['LLAMA_CLOUD_API_KEY'] = LLAMA_API_KEY
 
 # Test documents
 TEST_DOCS = [

@@ -37,8 +37,43 @@ Thumbs.db
 .cache/
 *.cache
 
-# API Keys and secrets
+# API Keys and secrets - CRITICAL: Never commit these
 *credentials*.json
 *secret*.json
 *.pem
 *.key
+*token*.json
+client_secret*.json
+oauth*.json
+
+# ChromaDB
+chroma_db/
+*.chroma
+
+# Backup files
+*.bak
+*.backup
+
+# Test outputs
+llamaparse_results.json
+test_output/
+
+# Large model files
+*.bin
+*.onnx
+*.pt
+*.safetensors
+
+# Ngrok/Tunnel related
+*.pid
+ngrok.log
+cloudflare.log
+localtunnel.log
+
+# SQLite databases
+*.db
+*.sqlite
+*.sqlite3
+
+# Backend logs
+backend.log

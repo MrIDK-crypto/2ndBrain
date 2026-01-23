@@ -8,15 +8,22 @@ Complete workflow with all steps:
 - Step 4: Stakeholder Map
 """
 
-from flask import Flask, render_template, request, jsonify
-from flask_cors import CORS
+import os
 import json
 import pickle
 import logging
 import sys
+import html  # For XSS prevention
 from pathlib import Path
 from datetime import datetime
 from functools import wraps
+
+from flask import Flask, render_template, request, jsonify
+from flask_cors import CORS
+from dotenv import load_dotenv
+
+# Load environment variables early
+load_dotenv()
 
 # Setup logging
 logging.basicConfig(
@@ -39,14 +46,45 @@ app = Flask(__name__,
             template_folder=str(PROJECT_ROOT / "frontend" / "templates"),
             static_folder=str(PROJECT_ROOT / "frontend" / "static"))
 
-# CORS configuration - restrict in production
-ALLOWED_ORIGINS = [
+# CORS configuration - configurable via environment
+# SECURITY: Avoid wildcards in production - they allow any subdomain
+ALLOWED_ORIGINS = os.getenv('CORS_ORIGINS', '').split(',') if os.getenv('CORS_ORIGINS') else [
     "http://localhost:5000",
+    "http://localhost:5003",
     "http://127.0.0.1:5000",
+    "http://127.0.0.1:5003",
     "https://2ndbrain.onrender.com",
-    "https://*.onrender.com"
 ]
+# Filter out empty strings
+ALLOWED_ORIGINS = [origin.strip() for origin in ALLOWED_ORIGINS if origin.strip()]
 CORS(app, origins=ALLOWED_ORIGINS)
+
+# Rate limiting - protect against abuse
+try:
+    from flask_limiter import Limiter
+    from flask_limiter.util import get_remote_address
+
+    limiter = Limiter(
+        key_func=get_remote_address,
+        app=app,
+        default_limits=["200 per day", "50 per hour"],
+        storage_uri="memory://",  # Use Redis in production: "redis://localhost:6379"
+    )
+    logger.info("Rate limiting enabled")
+except ImportError:
+    limiter = None
+    logger.warning("Flask-Limiter not installed, rate limiting disabled")
+
+
+# Helper for conditional rate limiting - use as decorator
+def rate_limit(limit_string):
+    """Apply rate limit if limiter is available, otherwise pass through"""
+    def decorator(f):
+        if limiter:
+            return limiter.limit(limit_string)(f)
+        return f
+    return decorator
+
 
 # Configuration
 BASE_DIR = PROJECT_ROOT
@@ -54,11 +92,6 @@ DATA_DIR = PROJECT_ROOT / "club_data"
 TARGET_USER = "rishi2205"
 APP_VERSION = "1.0.0"
 APP_START_TIME = datetime.now()
-
-# Load environment variables
-import os
-from dotenv import load_dotenv
-load_dotenv()
 
 # Validate required environment variables
 def validate_environment():
@@ -255,6 +288,29 @@ def handle_exception(error):
     return render_template('error.html', error_code=500, error_message="An unexpected error occurred"), 500
 
 # ============================================================================
+# Register Blueprints
+# ============================================================================
+
+# Auth blueprint for authentication endpoints
+try:
+    from ..auth.routes import auth_bp
+    app.register_blueprint(auth_bp)
+    logger.info("Auth blueprint registered at /api/auth")
+except ImportError as e:
+    logger.warning(f"Auth blueprint not available: {e}")
+
+# Protected API v1 blueprints (tenant-aware, authenticated)
+try:
+    from .routes import documents_bp, connectors_bp, search_bp, admin_bp
+    app.register_blueprint(documents_bp)
+    app.register_blueprint(connectors_bp)
+    app.register_blueprint(search_bp)
+    app.register_blueprint(admin_bp)
+    logger.info("API v1 blueprints registered (documents, connectors, search, admin)")
+except ImportError as e:
+    logger.warning(f"API v1 blueprints not available: {e}")
+
+# ============================================================================
 # Health & Status Endpoints
 # ============================================================================
 
@@ -262,6 +318,14 @@ def handle_exception(error):
 def health_check():
     """Health check endpoint for deployment monitoring"""
     uptime = (datetime.now() - APP_START_TIME).total_seconds()
+
+    # Check database connectivity
+    db_connected = False
+    try:
+        from ..database.database import check_db_connection
+        db_connected = check_db_connection()
+    except ImportError:
+        pass  # Database module not available
 
     health_status = {
         'status': 'healthy',
@@ -271,7 +335,8 @@ def health_check():
         'checks': {
             'openai_configured': bool(OPENAI_API_KEY),
             'data_loaded': embedding_index is not None,
-            'search_ready': search_index is not None
+            'search_ready': search_index is not None,
+            'database_connected': db_connected
         }
     }
 
@@ -456,11 +521,13 @@ def gmail_callback():
 
     # Check for errors from Google
     if error:
+        # SECURITY: Escape error message to prevent XSS
+        safe_error = html.escape(str(error))
         return f"""
         <html>
         <body>
             <h2>Authorization Failed</h2>
-            <p>Error: {error}</p>
+            <p>Error: {safe_error}</p>
             <p>Please close this window and try again.</p>
             <script>
                 setTimeout(function() {{
@@ -508,15 +575,16 @@ def gmail_callback():
         }
 
         # Return success page that closes popup and notifies parent
+        # SECURITY: Use specific origin instead of '*' in postMessage
         return f"""
         <html>
         <body>
             <h2 style="color: green;">Gmail Connected Successfully!</h2>
             <p>You can close this window now.</p>
             <script>
-                // Notify parent window
+                // Notify parent window - use origin for security
                 if (window.opener) {{
-                    window.opener.postMessage({{ type: 'GMAIL_CONNECTED', success: true }}, '*');
+                    window.opener.postMessage({{ type: 'GMAIL_CONNECTED', success: true }}, window.location.origin);
                 }}
                 // Close popup after 2 seconds
                 setTimeout(function() {{
@@ -528,14 +596,17 @@ def gmail_callback():
         """
 
     except Exception as e:
+        # SECURITY: Escape error for HTML and sanitize for JavaScript
+        safe_error_html = html.escape(str(e))
+        # For JS, we use a generic message to avoid injection
         return f"""
         <html>
         <body>
             <h2>Authorization Error</h2>
-            <p>Failed to complete authorization: {str(e)}</p>
+            <p>Failed to complete authorization: {safe_error_html}</p>
             <script>
                 if (window.opener) {{
-                    window.opener.postMessage({{ type: 'GMAIL_CONNECTED', success: false, error: '{str(e)}' }}, '*');
+                    window.opener.postMessage({{ type: 'GMAIL_CONNECTED', success: false, error: 'Authorization failed' }}, window.location.origin);
                 }}
                 setTimeout(function() {{
                     window.close();
@@ -700,8 +771,13 @@ def gmail_sync():
 @app.route('/api/messages/review')
 def api_messages_review():
     """Get messages that need review"""
-    page = int(request.args.get('page', 1))
-    per_page = int(request.args.get('per_page', 20))
+    # SECURITY: Validate pagination parameters
+    try:
+        page = max(1, int(request.args.get('page', 1)))
+        per_page = min(100, max(1, int(request.args.get('per_page', 20))))  # Cap at 100
+    except (ValueError, TypeError):
+        page = 1
+        per_page = 20
     space_filter = request.args.get('space', '')
 
     # Load uncertain messages from filter results
@@ -914,8 +990,9 @@ def api_answer_question_v1():
 # ============================================================================
 
 @app.route('/api/search', methods=['POST'])
+@rate_limit("30 per minute")
 def api_search():
-    """Search the knowledge base"""
+    """Search the knowledge base - rate limited to prevent API abuse"""
     global enhanced_rag, stakeholder_graph
 
     data = request.get_json()
@@ -1373,12 +1450,18 @@ def api_view_document(doc_id):
     content = doc.get('content', '')
     title = metadata.get('file_name', doc_id)
 
-    # Simple HTML view
-    html = f"""
+    # SECURITY: Escape all user-controlled content to prevent XSS
+    safe_title = html.escape(str(title))
+    safe_project = html.escape(str(metadata.get('project', 'Unknown')))
+    safe_date = html.escape(str(metadata.get('date', 'N/A')))
+    safe_content = html.escape(str(content))
+
+    # Simple HTML view with escaped content
+    html_response = f"""
     <!DOCTYPE html>
     <html>
     <head>
-        <title>{title}</title>
+        <title>{safe_title}</title>
         <style>
             body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
                    max-width: 800px; margin: 40px auto; padding: 20px; line-height: 1.6; }}
@@ -1388,16 +1471,16 @@ def api_view_document(doc_id):
         </style>
     </head>
     <body>
-        <h1>{title}</h1>
+        <h1>{safe_title}</h1>
         <div class="meta">
-            <strong>Project:</strong> {metadata.get('project', 'Unknown')} |
-            <strong>Date:</strong> {metadata.get('date', 'N/A')}
+            <strong>Project:</strong> {safe_project} |
+            <strong>Date:</strong> {safe_date}
         </div>
-        <div class="content">{content}</div>
+        <div class="content">{safe_content}</div>
     </body>
     </html>
     """
-    return html
+    return html_response
 
 
 # ============================================================================
@@ -1705,8 +1788,9 @@ def api_reprocess_projects():
 # ============================================================================
 
 @app.route('/api/transcribe', methods=['POST'])
+@rate_limit("10 per minute")
 def api_transcribe():
-    """Transcribe audio using OpenAI Whisper API (best-in-class transcription)"""
+    """Transcribe audio using OpenAI Whisper API - rate limited (expensive API)"""
     import tempfile
     import os
 
@@ -1921,8 +2005,9 @@ Only generate genuinely useful follow-ups. Return empty array if answer is compl
 
 
 @app.route('/api/questions/generate', methods=['POST'])
+@rate_limit("20 per minute")
 def api_generate_questions():
-    """Generate intelligent questions by analyzing documents"""
+    """Generate intelligent questions - rate limited (uses LLM)"""
     global knowledge_gaps, embedding_index
 
     data = request.get_json() or {}
@@ -2003,10 +2088,11 @@ def api_generate_questions():
         })
 
     except Exception as e:
-        import traceback
+        # SECURITY: Log traceback server-side, don't expose to clients
+        logger.error(f"Error in question generation: {e}", exc_info=True)
         return jsonify({
-            'error': str(e),
-            'traceback': traceback.format_exc()
+            'error': 'An error occurred while generating questions',
+            'details': str(e) if os.getenv('FLASK_DEBUG', 'false').lower() == 'true' else None
         }), 500
 
 
@@ -2196,10 +2282,11 @@ Return JSON:
         })
 
     except Exception as e:
-        import traceback
+        # SECURITY: Log traceback server-side, don't expose to clients
+        logger.error(f"Error in project analysis: {e}", exc_info=True)
         return jsonify({
-            'error': str(e),
-            'traceback': traceback.format_exc()
+            'error': 'An error occurred during project analysis',
+            'details': str(e) if os.getenv('FLASK_DEBUG', 'false').lower() == 'true' else None
         }), 500
 
 
@@ -2292,10 +2379,11 @@ def api_gamma_generate():
             }), response.status_code
 
     except Exception as e:
-        import traceback
+        # SECURITY: Log traceback server-side, don't expose to clients
+        logger.error(f"Error in Gamma generation: {e}", exc_info=True)
         return jsonify({
-            'error': str(e),
-            'traceback': traceback.format_exc()
+            'error': 'An error occurred during presentation generation',
+            'details': str(e) if os.getenv('FLASK_DEBUG', 'false').lower() == 'true' else None
         }), 500
 
 
@@ -2455,10 +2543,11 @@ def api_gamma_preview_structure():
         })
 
     except Exception as e:
-        import traceback
+        # SECURITY: Log traceback server-side, don't expose to clients
+        logger.error(f"Error in Gamma preview: {e}", exc_info=True)
         return jsonify({
-            'error': str(e),
-            'traceback': traceback.format_exc()
+            'error': 'An error occurred during preview generation',
+            'details': str(e) if os.getenv('FLASK_DEBUG', 'false').lower() == 'true' else None
         }), 500
 
 
@@ -2469,8 +2558,9 @@ def api_gamma_preview_structure():
 # ============================================================================
 
 @app.route('/api/documents/upload', methods=['POST'])
+@rate_limit("10 per minute")
 def upload_document():
-    """Upload and process a document"""
+    """Upload and process a document - rate limited to prevent abuse"""
     global document_manager
 
     if not document_manager:
@@ -2593,4 +2683,6 @@ if __name__ == '__main__':
     print("\n Open your browser to: http://localhost:5003")
     print("\nPress Ctrl+C to stop\n")
 
-    app.run(debug=True, host='0.0.0.0', port=5003, use_reloader=False)
+    # SECURITY: Never run with debug=True in production
+    debug_mode = os.getenv('FLASK_DEBUG', 'false').lower() == 'true'
+    app.run(debug=debug_mode, host='0.0.0.0', port=5003, use_reloader=False)
